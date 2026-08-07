@@ -1,0 +1,48 @@
+includeFile = beam_carbon.txt
+
+
+
+
+
+s:Ge/BeamPosition2/Parent="World"
+s:Ge/BeamPosition2/Type= "Group" # "TsBox" # "Group"
+d:Ge/BeamPosition2/TransX=  Tf/Scatterer1/L5/Value mm # 0. m
+d:Ge/BeamPosition2/TransY= Tf/Scatterer1/L6/Value mm  # 0. m
+d:Ge/BeamPosition2/TransZ= 0 m # 0.45 m
+d:Ge/BeamPosition2/RotX=  Tf/Scatterer1/L7/Value deg # 180. deg 
+d:Ge/BeamPosition2/RotY= Tf/Scatterer1/L8/Value deg # 0. deg
+d:Ge/BeamPosition2/RotZ= 0. deg # Tf/Scatterer1/L7/Value deg # 0. deg 
+# rotation: all 0 z axix, rotate left hand, around Y, then X, rotate around axis in world space, Z is beam around it's self
+s:Ge/BeamPosition2/Color	= "red"
+
+s:Ge/BeamPosition20/Parent     = "BeamPosition2"
+s:Ge/BeamPosition20/Type       =  "TsBox"
+s:Ge/BeamPosition20/Material   = "Air"
+d:Ge/BeamPosition20/HLX        = 1 cm
+d:Ge/BeamPosition20/HLY        = 1 cm
+d:Ge/BeamPosition20/HLZ        = 2 cm
+d:Ge/BeamPosition20/TransX     = 0. m
+d:Ge/BeamPosition20/TransY     = 0. m
+d:Ge/BeamPosition20/TransZ     = -0.0201 m # 1um shift to avoid overlap
+d:Ge/BeamPosition20/RotX       = 0. deg
+d:Ge/BeamPosition20/RotY       = 0. deg
+d:Ge/BeamPosition20/RotZ       = 0. deg
+s:Ge/BeamPosition20/Color	  = "white"
+
+
+s:So/ProtonSource/Type = "emittance"
+s:So/ProtonSource/Component                = "BeamPosition2"
+s:So/ProtonSource/BeamParticle             =  "GenericIon(6,12,6)"# "proton" # "GenericIon(6,12,6)"
+s:So/ProtonSource/Distribution = "BiGaussian"
+d:So/ProtonSource/BeamEnergy               = Tf/Scatterer1/L2/Value MeV
+u:So/ProtonSource/BeamEnergySpread         = Tf/Scatterer1/L3/Value 
+d:So/ProtonSource/SigmaX = Tf/Scatterer1/L9/Value mm
+u:So/ProtonSource/SigmaXprime = Tf/Scatterer1/L10/Value 
+u:So/ProtonSource/CorrelationX =  Tf/Scatterer1/L11/Value 
+d:So/ProtonSource/SigmaY = Tf/Scatterer1/L12/Value mm
+u:So/ProtonSource/SigmaYprime = Tf/Scatterer1/L13/Value 
+u:So/ProtonSource/CorrelationY = Tf/Scatterer1/L14/Value 
+
+i:So/ProtonSource/NumberOfHistoriesInRun = Tf/Scatterer1/L4/Value 
+
+

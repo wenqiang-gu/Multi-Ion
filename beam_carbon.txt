@@ -1,0 +1,82 @@
+
+
+
+# Setting first scatterers:
+s:Tf/Scatterer1/L0/Function = "Step" # SpotID
+dv:Tf/Scatterer1/L0/Times   = 1 1  ms 
+iv:Tf/Scatterer1/L0/Values  = 1 1 
+
+dv:Tf/Scatterer1/L1/Values  = 1 115.23		MeV # Norminal E 88 -430 MeV/u: 20-300 mm range beam size 4-12mm
+dv:Tf/Scatterer1/L2/Values  = 1 1382.76		MeV # E
+uv:Tf/Scatterer1/L3/Values  = 1 0			# Esigma
+iv:Tf/Scatterer1/L4/Values  = 1 300000 			# history 30000 for phase, 3000000 for dose
+dv:Tf/Scatterer1/L5/Values  = 1 0			mm # SourseX
+dv:Tf/Scatterer1/L6/Values  = 1 0			mm # SourseY
+dv:Tf/Scatterer1/L7/Values  = 1 0			deg # SourseRotX
+dv:Tf/Scatterer1/L8/Values  = 1 180			deg # SourseRotY
+dv:Tf/Scatterer1/L9/Values  = 1 0	  		mm # SigmaX
+uv:Tf/Scatterer1/L10/Values  = 1 0		  	# SigmaXprime
+uv:Tf/Scatterer1/L11/Values  = 1 0		 	# CorrelationX 
+dv:Tf/Scatterer1/L12/Values  = 1 0	  		mm # SigmaY
+uv:Tf/Scatterer1/L13/Values  = 1 0	  		# SigmaYprime
+uv:Tf/Scatterer1/L14/Values  = 1 0		   	# CorrelationY 
+
+
+
+
+
+
+
+
+
+s:Tf/Scatterer1/L1/Function = "Step" # Norminal E
+s:Tf/Scatterer1/L2/Function = "Step" # E
+s:Tf/Scatterer1/L3/Function = "Step" # Esigma
+s:Tf/Scatterer1/L4/Function = "Step" # history
+s:Tf/Scatterer1/L5/Function = "Step" # SourseX
+s:Tf/Scatterer1/L6/Function = "Step" # SourseY
+s:Tf/Scatterer1/L7/Function = "Step" # SourseRotX
+s:Tf/Scatterer1/L8/Function = "Step" # SourseRotY
+s:Tf/Scatterer1/L9/Function = "Step" # SigmaX
+s:Tf/Scatterer1/L10/Function = "Step" # SigmaXprime
+s:Tf/Scatterer1/L11/Function = "Step" # CorrelationX 
+s:Tf/Scatterer1/L12/Function = "Step" # SigmaY
+s:Tf/Scatterer1/L13/Function = "Step" # SigmaYprime
+s:Tf/Scatterer1/L14/Function = "Step" # CorrelationY 
+
+dv:Tf/Scatterer1/L1/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L2/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L3/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L4/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L5/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L6/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L7/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L8/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L9/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L10/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L11/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L12/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L13/Times   = Tf/Scatterer1/L0/Times ms
+dv:Tf/Scatterer1/L14/Times   = Tf/Scatterer1/L0/Times ms
+
+
+
+#s:Tf/VerticalMoveCosine/Function           = "Cosine"
+#d:Tf/VerticalMoveCosine/RepetitionInterval = 1.0 s
+#d:Tf/VerticalMoveCosine/Rate               = 0.36 deg/ms
+#d:Tf/VerticalMoveCosine/StartValue         = 0.0 deg
+
+#d:Tf/VerticalMoveE_Cosine/Value = -10.0 MeV * Tf/VerticalMoveCosine/Value
+#d:Tf/VerticalMoveEnergy/Value   = 139.8030000 MeV + Tf/VerticalMoveE_Cosine/Value
+#i:Tf/Verbosity = 1
+
+# d:Ge/RMW_1/RotZ = Tf/RMW_Rotation/Value deg
+
+#d:Tf/TimelineEnd             = 100.0 ms
+#i:Tf/NumberOfSequentialTimes = 100
+
+#s:Tf/RMW_Rotation/Function           = "Linear deg"
+#d:Tf/RMW_Rotation/Rate               = 90 deg/ms
+#d:Tf/RMW_Rotation/StartValue         = 0.0 deg
+#d:Tf/RMW_Rotation/RepetitionInterval = 1.5 ms
+

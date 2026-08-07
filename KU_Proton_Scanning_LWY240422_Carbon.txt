@@ -1,0 +1,89 @@
+#===========Target
+# includeFile = TargetInWaterPhantom_depth16.txt  
+
+#=============sourse 
+
+ includeFile = Source_scanning_LWY240422.txt
+
+#==============Aperture
+
+# includeFile = Aperture_5_2.8mm_6cm_LWY1_9mparallel.txt
+
+
+#===============scoring
+
+# includeFile = scoring_volumes_3D_Cylind.txt
+
+#============phase space recording (only one phase space)
+includeFile = phasespacepara_Cylin.txt
+  
+#========physics
+# sv:Ph/Default/Modules = 1 "Transportation_Only"
+ sv:Ph/Default/Modules   = 6 "g4em-standard_opt4" "g4h-phy_QGSP_BIC_HP" "g4decay" "g4ion-binarycascade" "g4h-elastic_HP" "g4stopping"
+# sv:Ph/Default/Modules   = 3 "g4em-standard_opt4" "g4decay"  "g4h-elastic_HP"
+
+
+#===============================================
+
+
+
+s:Ge/World/Material  = "Air" #"Vacuum"
+d:Ge/World/HLX       = 2.0 m
+d:Ge/World/HLY       = 2.0 m
+d:Ge/World/HLZ       = 2.0 m
+# b:Ge/World/Invisible = "TRUE"
+s:Ge/World/Color    = "white"
+
+
+#==Time figure, related with sourse
+d:Tf/TimelineEnd                    = 1 ms
+i:Tf/NumberOfSequentialTimes        = 1 # number of divitions of total time, at each time intertal, run the history
+
+
+
+
+
+
+
+
+ b:Ts/PauseBeforeQuit = "False"
+#b:Ts/PauseBeforeQuit = "True"
+# Ts/UseQt = "True"
+ i:Ts/NumberOfThreads = -1 # defaults to 1
+# b:Ts/BufferThreadOutput = "True" # Causes console output to be show one thread at a time
+ i:Ts/ShowHistoryCountAtInterval = 10000 # 10000
+Ts/TreatExcitedIonsAsGroundState = "True"
+ 
+b:Ge/QuitIfOverlapDetected= "False"
+d:Gr/ViewA/Theta            = 90 deg
+d:Gr/ViewA/Phi              = 0 deg
+s:Gr/ViewA/Projection       = "Perspective"
+d:Gr/ViewA/PerspectiveAngle = 20 deg
+u:Gr/ViewA/Zoom             = 1
+
+# s:Gr/ViewA/Type                             = "OpenGL"
+i:Gr/ViewA/WindowSizeX                      = 768
+i:Gr/ViewA/WindowSizeY                      = 768
+# d:Gr/ViewA/Theta                            = 25 deg
+# d:Gr/ViewA/Phi                              = 14 deg
+# s:Gr/ViewA/Projection                       = "Perspective"
+# d:Gr/ViewA/PerspectiveAngle                 = 20 deg
+# u:Gr/ViewA/Zoom                             = 10
+b:Gr/ViewA/HiddenLineRemovalForTrajectories = "False"
+b:Gr/ViewA/IncludeAxes                      = "True"
+s:Gr/ViewA/AxesComponent                    = "World"
+d:Gr/ViewA/AxesSize                         = 0.1 m
+
+#b:Gr/ViewA/CopyOpenGLToEPS     = "True"
+b:Gr/ViewA/IncludeTrajectories = "True"
+
+s:Gr/ViewA/ColorBy      = "Charge"
+s:Gr/ViewA/ChargeColors = "red green cyan"
+
+
+
+
+
+
+
+

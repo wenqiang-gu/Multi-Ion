@@ -1,0 +1,15 @@
+
+s:Ge/WaterPhantom/Type     = "TsBox"
+s:Ge/WaterPhantom/Parent   = "World"
+s:Ge/WaterPhantom/Material = "G4_WATER"
+d:Ge/WaterPhantom/HLX      = 15.0 cm
+d:Ge/WaterPhantom/HLY      = 15.0 cm
+d:Ge/WaterPhantom/HLZ      = 16.0 cm
+d:Ge/WaterPhantom/TransX   = 0. cm
+d:Ge/WaterPhantom/TransY   = 0. cm
+d:Ge/WaterPhantom/TransZ   = -16. cm
+d:Ge/WaterPhantom/RotX     = 0. deg
+d:Ge/WaterPhantom/RotY     = 0. deg
+d:Ge/WaterPhantom/RotZ     = 0. deg
+s:Ge/WaterPhantom/Color    = "white"
+
