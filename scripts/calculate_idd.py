@@ -324,8 +324,8 @@ def plot_idd(
     path: Path,
     depths: list[float],
     normalized_idd: list[float],
-    smoothed_idd: object,
-    fluctuation: object,
+    smoothed_idd: object | None,
+    fluctuation: object | None,
     interactive: bool = False,
     show_fluctuation_panel: bool = False,
 ) -> None:
@@ -354,19 +354,25 @@ def plot_idd(
         linewidth=1.2,
         label="Raw IDD",
     )
-    idd_axis.plot(
-        depths,
-        smoothed_idd,
-        color="#d95f02",
-        linewidth=2.0,
-        label="Smoothed mean",
-    )
+    if show_fluctuation_panel:
+        if smoothed_idd is None or fluctuation is None:
+            raise ValueError(
+                "smoothed IDD and fluctuation data are required for the "
+                "fluctuation panel"
+            )
+        idd_axis.plot(
+            depths,
+            smoothed_idd,
+            color="#d95f02",
+            linewidth=2.0,
+            label="Smoothed mean",
+        )
     idd_axis.set_title("Integrated Depth Dose (IDD)", fontsize=16, pad=14)
     idd_axis.set_ylabel("Normalized IDD (%)", fontsize=12)
     if not show_fluctuation_panel:
         idd_axis.set_xlabel("Depth (cm)", fontsize=12)
     idd_axis.set_xlim(min(depths), max(depths))
-    idd_axis.set_ylim(0, max(105.0, float(np.max(smoothed_idd)) * 1.05))
+    idd_axis.set_ylim(0, max(105.0, float(np.max(normalized_idd)) * 1.05))
     idd_axis.grid(True, color="#dce2e9", linewidth=0.8)
     idd_axis.legend(loc="best", frameon=False)
 
@@ -435,16 +441,21 @@ def main() -> int:
         args.depth_offset_cm,
         args.reverse_depth,
     )
-    smoothed_idd, smoothing_window_bins = smooth_local_quadratic(
-        depths,
-        normalized_idd,
-        args.smoothing_window_cm,
-    )
-    fluctuation, metrics = calculate_fluctuation(
-        normalized_idd,
-        smoothed_idd,
-        args.analysis_min_percent,
-    )
+    smoothed_idd = None
+    fluctuation = None
+    smoothing_window_bins = None
+    metrics = None
+    if args.show_fluctuation_panel:
+        smoothed_idd, smoothing_window_bins = smooth_local_quadratic(
+            depths,
+            normalized_idd,
+            args.smoothing_window_cm,
+        )
+        fluctuation, metrics = calculate_fluctuation(
+            normalized_idd,
+            smoothed_idd,
+            args.analysis_min_percent,
+        )
 
     output = args.output or args.input.with_name(f"{args.input.stem}_idd.png")
     if output.suffix.lower() != ".png":
@@ -463,17 +474,18 @@ def main() -> int:
     print(f"Plotted {len(depths)} depth bins to {output} ({orientation}).")
     if args.interactive:
         print("Opened the interactive Matplotlib plot window.")
-    print(
-        f"Local quadratic mean: {args.smoothing_window_cm:g} cm "
-        f"({smoothing_window_bins} bins)."
-    )
-    print(
-        f"Fluctuation diagnostics above {args.analysis_min_percent:g}% of the "
-        f"smoothed maximum: RMS={metrics['rms_percent']:.3f}%, "
-        f"P95(abs)={metrics['p95_absolute_percent']:.3f}%, "
-        f"Max(abs)={metrics['max_absolute_percent']:.3f}%, "
-        f"bins={metrics['analyzed_bins']}."
-    )
+    if metrics is not None and smoothing_window_bins is not None:
+        print(
+            f"Local quadratic mean: {args.smoothing_window_cm:g} cm "
+            f"({smoothing_window_bins} bins)."
+        )
+        print(
+            f"Fluctuation diagnostics above {args.analysis_min_percent:g}% of the "
+            f"smoothed maximum: RMS={metrics['rms_percent']:.3f}%, "
+            f"P95(abs)={metrics['p95_absolute_percent']:.3f}%, "
+            f"Max(abs)={metrics['max_absolute_percent']:.3f}%, "
+            f"bins={metrics['analyzed_bins']}."
+        )
     return 0
 
 
