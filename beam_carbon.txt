@@ -6,10 +6,12 @@ s:Tf/Scatterer1/L0/Function = "Step" # SpotID
 dv:Tf/Scatterer1/L0/Times   = 1 1  ms 
 iv:Tf/Scatterer1/L0/Values  = 1 1 
 
+# GSI's ion kinetic energy: 48 - 430 MeV /u 
+# ref: https://www.gsi.de/en/work/beschleunigerbetrieb/beschleuniger/unilac/projects_and_tasks/therapy_accelerator?no_cache=1 
 dv:Tf/Scatterer1/L1/Values  = 1 115.23		MeV # Norminal E 88 -430 MeV/u: 20-300 mm range beam size 4-12mm
 dv:Tf/Scatterer1/L2/Values  = 1 1382.76		MeV # E
 uv:Tf/Scatterer1/L3/Values  = 1 0			# Esigma
-iv:Tf/Scatterer1/L4/Values  = 1 300000 			# history 30000 for phase, 3000000 for dose
+iv:Tf/Scatterer1/L4/Values  = 1 30 			# history 30000 for phase, 3000000 for dose
 dv:Tf/Scatterer1/L5/Values  = 1 0			mm # SourseX
 dv:Tf/Scatterer1/L6/Values  = 1 0			mm # SourseY
 dv:Tf/Scatterer1/L7/Values  = 1 0			deg # SourseRotX
