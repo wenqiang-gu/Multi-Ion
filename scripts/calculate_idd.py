@@ -121,6 +121,13 @@ def parse_args() -> argparse.Namespace:
             "to zoom, pan, and inspect coordinates"
         ),
     )
+    parser.add_argument(
+        "--fluctuation-panel",
+        dest="show_fluctuation_panel",
+        action="store_true",
+        default=False,
+        help="add the lower fluctuation panel to the IDD plot",
+    )
     return parser.parse_args()
 
 
@@ -320,20 +327,25 @@ def plot_idd(
     smoothed_idd: object,
     fluctuation: object,
     interactive: bool = False,
+    show_fluctuation_panel: bool = False,
 ) -> None:
     import numpy as np
     import matplotlib.pyplot as plt
 
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    figure, (idd_axis, fluctuation_axis) = plt.subplots(
-        2,
-        1,
-        figsize=(10, 8),
-        dpi=150,
-        sharex=True,
-        gridspec_kw={"height_ratios": (3, 1), "hspace": 0.08},
-    )
+    if show_fluctuation_panel:
+        figure, (idd_axis, fluctuation_axis) = plt.subplots(
+            2,
+            1,
+            figsize=(10, 8),
+            dpi=150,
+            sharex=True,
+            gridspec_kw={"height_ratios": (3, 1), "hspace": 0.08},
+        )
+    else:
+        figure, idd_axis = plt.subplots(figsize=(10, 6), dpi=150)
+        fluctuation_axis = None
 
     idd_axis.plot(
         depths,
@@ -351,34 +363,38 @@ def plot_idd(
     )
     idd_axis.set_title("Integrated Depth Dose (IDD)", fontsize=16, pad=14)
     idd_axis.set_ylabel("Normalized IDD (%)", fontsize=12)
+    if not show_fluctuation_panel:
+        idd_axis.set_xlabel("Depth (cm)", fontsize=12)
     idd_axis.set_xlim(min(depths), max(depths))
     idd_axis.set_ylim(0, max(105.0, float(np.max(smoothed_idd)) * 1.05))
     idd_axis.grid(True, color="#dce2e9", linewidth=0.8)
     idd_axis.legend(loc="best", frameon=False)
 
-    fluctuation_axis.axhspan(-1, 1, color="#2ca25f", alpha=0.16)
-    fluctuation_axis.axhspan(1, 2, color="#f0ad4e", alpha=0.14)
-    fluctuation_axis.axhspan(-2, -1, color="#f0ad4e", alpha=0.14)
-    fluctuation_axis.axhline(0, color="#4a5568", linewidth=1.0)
-    fluctuation_axis.axhline(1, color="#2ca25f", linestyle=":", linewidth=1.0)
-    fluctuation_axis.axhline(-1, color="#2ca25f", linestyle=":", linewidth=1.0)
-    fluctuation_axis.axhline(2, color="#d98e04", linestyle="--", linewidth=1.0)
-    fluctuation_axis.axhline(-2, color="#d98e04", linestyle="--", linewidth=1.0)
-    fluctuation_axis.plot(
-        depths,
-        fluctuation,
-        color="#6a3d9a",
-        linewidth=1.0,
-    )
+    if fluctuation_axis is not None:
+        fluctuation_axis.axhspan(-1, 1, color="#2ca25f", alpha=0.16)
+        fluctuation_axis.axhspan(1, 2, color="#f0ad4e", alpha=0.14)
+        fluctuation_axis.axhspan(-2, -1, color="#f0ad4e", alpha=0.14)
+        fluctuation_axis.axhline(0, color="#4a5568", linewidth=1.0)
+        fluctuation_axis.axhline(1, color="#2ca25f", linestyle=":", linewidth=1.0)
+        fluctuation_axis.axhline(-1, color="#2ca25f", linestyle=":", linewidth=1.0)
+        fluctuation_axis.axhline(2, color="#d98e04", linestyle="--", linewidth=1.0)
+        fluctuation_axis.axhline(-2, color="#d98e04", linestyle="--", linewidth=1.0)
+        fluctuation_axis.plot(
+            depths,
+            fluctuation,
+            color="#6a3d9a",
+            linewidth=1.0,
+        )
 
-    finite_fluctuation = np.asarray(fluctuation)[np.isfinite(fluctuation)]
-    residual_limit = max(3.0, float(np.max(np.abs(finite_fluctuation))) * 1.05)
-    fluctuation_axis.set_ylim(-residual_limit, residual_limit)
-    fluctuation_axis.set_xlabel("Depth (cm)", fontsize=12)
-    fluctuation_axis.set_ylabel("Fluctuation (%)", fontsize=11)
-    fluctuation_axis.grid(True, axis="x", color="#dce2e9", linewidth=0.8)
+        finite_fluctuation = np.asarray(fluctuation)[np.isfinite(fluctuation)]
+        residual_limit = max(3.0, float(np.max(np.abs(finite_fluctuation))) * 1.05)
+        fluctuation_axis.set_ylim(-residual_limit, residual_limit)
+        fluctuation_axis.set_xlabel("Depth (cm)", fontsize=12)
+        fluctuation_axis.set_ylabel("Fluctuation (%)", fontsize=11)
+        fluctuation_axis.grid(True, axis="x", color="#dce2e9", linewidth=0.8)
 
-    for axis in (idd_axis, fluctuation_axis):
+    axes = (idd_axis,) if fluctuation_axis is None else (idd_axis, fluctuation_axis)
+    for axis in axes:
         axis.spines["top"].set_visible(False)
         axis.spines["right"].set_visible(False)
 
@@ -440,6 +456,7 @@ def main() -> int:
         smoothed_idd,
         fluctuation,
         interactive=args.interactive,
+        show_fluctuation_panel=args.show_fluctuation_panel,
     )
 
     orientation = "reversed Z-bin order" if args.reverse_depth else "CSV Z-bin order"
