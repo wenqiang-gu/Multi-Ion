@@ -54,10 +54,22 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="output PNG (default: <input_stem>_idd.png)",
     )
-    parser.add_argument(
+    depth_order = parser.add_mutually_exclusive_group()
+    depth_order.add_argument(
         "--reverse-depth",
+        dest="reverse_depth",
         action="store_true",
-        help="make the highest Z-bin index the shallowest depth",
+        default=True,
+        help=(
+            "make the highest Z-bin index the shallowest depth "
+            "(default)"
+        ),
+    )
+    depth_order.add_argument(
+        "--no-reverse-depth",
+        dest="reverse_depth",
+        action="store_false",
+        help="use CSV Z-bin order instead of reversing depth",
     )
     parser.add_argument(
         "--depth-offset-cm",
@@ -89,8 +101,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--smoothing-window-cm",
         type=positive_float,
-        default=1.0,
-        help="width of the local quadratic smoothing window (default: 1.0 cm)",
+        default=0.5,
+        help="width of the local quadratic smoothing window (default: 0.5 cm)",
     )
     parser.add_argument(
         "--analysis-min-percent",
@@ -99,6 +111,14 @@ def parse_args() -> argparse.Namespace:
         help=(
             "exclude residuals where the smoothed IDD is below this percentage "
             "of its maximum (default: 10)"
+        ),
+    )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help=(
+            "open a Matplotlib window after saving the PNG; use its toolbar "
+            "to zoom, pan, and inspect coordinates"
         ),
     )
     return parser.parse_args()
@@ -202,7 +222,7 @@ def build_curve(
     return depths, normalized_idd
 
 
-def require_analysis_dependencies() -> None:
+def require_analysis_dependencies(interactive: bool = False) -> None:
     try:
         import numpy  # noqa: F401
         import matplotlib
@@ -212,7 +232,8 @@ def require_analysis_dependencies() -> None:
             "python3 -m pip install numpy matplotlib"
         ) from error
 
-    matplotlib.use("Agg")
+    if not interactive:
+        matplotlib.use("Agg")
 
 
 def smooth_local_quadratic(
@@ -298,6 +319,7 @@ def plot_idd(
     normalized_idd: list[float],
     smoothed_idd: object,
     fluctuation: object,
+    interactive: bool = False,
 ) -> None:
     import numpy as np
     import matplotlib.pyplot as plt
@@ -362,12 +384,17 @@ def plot_idd(
 
     figure.tight_layout()
     figure.savefig(path, format="png", dpi=150)
+    if interactive:
+        # Keep the window alive so Matplotlib's zoom, pan, and coordinate
+        # inspection tools can be used. The shared x-axis keeps both panels
+        # aligned while navigating the curve.
+        plt.show()
     plt.close(figure)
 
 
 def main() -> int:
     args = parse_args()
-    require_analysis_dependencies()
+    require_analysis_dependencies(args.interactive)
     dimensions, rows = read_topas_csv(args.input)
 
     z_width_cm = require_dimension(
@@ -406,10 +433,19 @@ def main() -> int:
     output = args.output or args.input.with_name(f"{args.input.stem}_idd.png")
     if output.suffix.lower() != ".png":
         raise ValueError("output filename must end in .png")
-    plot_idd(output, depths, normalized_idd, smoothed_idd, fluctuation)
+    plot_idd(
+        output,
+        depths,
+        normalized_idd,
+        smoothed_idd,
+        fluctuation,
+        interactive=args.interactive,
+    )
 
     orientation = "reversed Z-bin order" if args.reverse_depth else "CSV Z-bin order"
     print(f"Plotted {len(depths)} depth bins to {output} ({orientation}).")
+    if args.interactive:
+        print("Opened the interactive Matplotlib plot window.")
     print(
         f"Local quadratic mean: {args.smoothing_window_cm:g} cm "
         f"({smoothing_window_bins} bins)."
