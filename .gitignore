@@ -1,2 +1,6 @@
 # TOPAS scoring outputs
 *.csv
+
+# TOPAS phase space files
+*.phsp
+*.header
