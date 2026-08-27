@@ -45,9 +45,9 @@ i:Tf/NumberOfSequentialTimes        = 1 # number of divitions of total time, at 
  b:Ts/PauseBeforeQuit = "False"
 #b:Ts/PauseBeforeQuit = "True"
 # Ts/UseQt = "True"
- i:Ts/NumberOfThreads = 8 # defaults to 1
+ i:Ts/NumberOfThreads = 12 # defaults to 1
 # b:Ts/BufferThreadOutput = "True" # Causes console output to be show one thread at a time
- i:Ts/ShowHistoryCountAtInterval = 10000 # 10000
+ i:Ts/ShowHistoryCountAtInterval = 10000
 Ts/TreatExcitedIonsAsGroundState = "True"
  
 b:Ge/QuitIfOverlapDetected= "False"
