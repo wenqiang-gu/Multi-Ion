@@ -33,6 +33,13 @@ def positive_float(value: str) -> float:
     return number
 
 
+def percentage_float(value: str) -> float:
+    number = float(value)
+    if not 0 <= number <= 100:
+        raise argparse.ArgumentTypeError("value must be between 0 and 100")
+    return number
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -78,6 +85,21 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=0.0,
         help="inner radius of radial bin zero (default: 0)",
+    )
+    parser.add_argument(
+        "--smoothing-window-cm",
+        type=positive_float,
+        default=1.0,
+        help="width of the local quadratic smoothing window (default: 1.0 cm)",
+    )
+    parser.add_argument(
+        "--analysis-min-percent",
+        type=percentage_float,
+        default=10.0,
+        help=(
+            "exclude residuals where the smoothed IDD is below this percentage "
+            "of its maximum (default: 10)"
+        ),
     )
     return parser.parse_args()
 
@@ -180,30 +202,164 @@ def build_curve(
     return depths, normalized_idd
 
 
-def plot_idd(path: Path, depths: list[float], normalized_idd: list[float]) -> None:
+def require_analysis_dependencies() -> None:
     try:
+        import numpy  # noqa: F401
         import matplotlib
     except ModuleNotFoundError as error:
         raise SystemExit(
-            "Matplotlib is required. Install it with: "
-            "python3 -m pip install matplotlib"
+            "NumPy and Matplotlib are required. Install them with: "
+            "python3 -m pip install numpy matplotlib"
         ) from error
 
     matplotlib.use("Agg")
+
+
+def smooth_local_quadratic(
+    depths: list[float],
+    values: list[float],
+    window_cm: float,
+) -> tuple[object, int]:
+    """Return a local-quadratic baseline and the odd window size in bins."""
+    import numpy as np
+
+    x = np.asarray(depths, dtype=float)
+    y = np.asarray(values, dtype=float)
+    if x.size != y.size:
+        raise ValueError("depth and IDD arrays must have the same length")
+    if x.size < 5:
+        raise ValueError("at least five depth bins are required for smoothing")
+
+    spacings = np.diff(x)
+    if np.any(spacings <= 0):
+        raise ValueError("depth values must be strictly increasing")
+    bin_width_cm = float(np.median(spacings))
+
+    window_bins = max(5, int(round(window_cm / bin_width_cm)))
+    if window_bins % 2 == 0:
+        window_bins += 1
+    largest_odd_window = x.size if x.size % 2 == 1 else x.size - 1
+    window_bins = min(window_bins, largest_odd_window)
+
+    half_window = window_bins // 2
+    smoothed = np.empty_like(y)
+    for index in range(x.size):
+        start = max(0, index - half_window)
+        end = min(x.size, start + window_bins)
+        start = max(0, end - window_bins)
+
+        local_x = x[start:end] - x[index]
+        local_y = y[start:end]
+        coefficients = np.polyfit(local_x, local_y, deg=2)
+        smoothed[index] = np.polyval(coefficients, 0.0)
+
+    # A dose baseline is physical only when non-negative.
+    return np.clip(smoothed, 0.0, None), window_bins
+
+
+def calculate_fluctuation(
+    raw_idd: list[float],
+    smoothed_idd: object,
+    analysis_min_percent: float,
+) -> tuple[object, dict[str, float | int]]:
+    """Calculate percent residuals and summary metrics in the analysis region."""
+    import numpy as np
+
+    raw = np.asarray(raw_idd, dtype=float)
+    smooth = np.asarray(smoothed_idd, dtype=float)
+    if raw.shape != smooth.shape:
+        raise ValueError("raw and smoothed IDD arrays must have the same shape")
+
+    smooth_peak = float(np.max(smooth))
+    if smooth_peak <= 0:
+        raise ValueError("smoothed IDD does not contain a positive value")
+
+    minimum = analysis_min_percent / 100.0 * smooth_peak
+    mask = np.isfinite(raw) & np.isfinite(smooth) & (smooth > 0) & (smooth >= minimum)
+    if not np.any(mask):
+        raise ValueError("no depth bins remain in the fluctuation analysis region")
+
+    residual = np.full(raw.shape, np.nan, dtype=float)
+    residual[mask] = 100.0 * (raw[mask] - smooth[mask]) / smooth[mask]
+    analyzed = residual[mask]
+    absolute = np.abs(analyzed)
+    metrics: dict[str, float | int] = {
+        "rms_percent": float(np.sqrt(np.mean(np.square(analyzed)))),
+        "p95_absolute_percent": float(np.percentile(absolute, 95)),
+        "max_absolute_percent": float(np.max(absolute)),
+        "analyzed_bins": int(analyzed.size),
+    }
+    return residual, metrics
+
+
+def plot_idd(
+    path: Path,
+    depths: list[float],
+    normalized_idd: list[float],
+    smoothed_idd: object,
+    fluctuation: object,
+) -> None:
+    import numpy as np
     import matplotlib.pyplot as plt
 
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    figure, axis = plt.subplots(figsize=(10, 6), dpi=150)
-    axis.plot(depths, normalized_idd, color="#185699", linewidth=1.5)
-    axis.set_title("Integrated Depth Dose (IDD)", fontsize=16, pad=14)
-    axis.set_xlabel("Depth (cm)", fontsize=12)
-    axis.set_ylabel("Normalized IDD (%)", fontsize=12)
-    axis.set_xlim(min(depths), max(depths))
-    axis.set_ylim(0, 105)
-    axis.grid(True, color="#dce2e9", linewidth=0.8)
-    axis.spines["top"].set_visible(False)
-    axis.spines["right"].set_visible(False)
+    figure, (idd_axis, fluctuation_axis) = plt.subplots(
+        2,
+        1,
+        figsize=(10, 8),
+        dpi=150,
+        sharex=True,
+        gridspec_kw={"height_ratios": (3, 1), "hspace": 0.08},
+    )
+
+    idd_axis.plot(
+        depths,
+        normalized_idd,
+        color="#185699",
+        linewidth=1.2,
+        label="Raw IDD",
+    )
+    idd_axis.plot(
+        depths,
+        smoothed_idd,
+        color="#d95f02",
+        linewidth=2.0,
+        label="Smoothed mean",
+    )
+    idd_axis.set_title("Integrated Depth Dose (IDD)", fontsize=16, pad=14)
+    idd_axis.set_ylabel("Normalized IDD (%)", fontsize=12)
+    idd_axis.set_xlim(min(depths), max(depths))
+    idd_axis.set_ylim(0, max(105.0, float(np.max(smoothed_idd)) * 1.05))
+    idd_axis.grid(True, color="#dce2e9", linewidth=0.8)
+    idd_axis.legend(loc="best", frameon=False)
+
+    fluctuation_axis.axhspan(-1, 1, color="#2ca25f", alpha=0.16)
+    fluctuation_axis.axhspan(1, 2, color="#f0ad4e", alpha=0.14)
+    fluctuation_axis.axhspan(-2, -1, color="#f0ad4e", alpha=0.14)
+    fluctuation_axis.axhline(0, color="#4a5568", linewidth=1.0)
+    fluctuation_axis.axhline(1, color="#2ca25f", linestyle=":", linewidth=1.0)
+    fluctuation_axis.axhline(-1, color="#2ca25f", linestyle=":", linewidth=1.0)
+    fluctuation_axis.axhline(2, color="#d98e04", linestyle="--", linewidth=1.0)
+    fluctuation_axis.axhline(-2, color="#d98e04", linestyle="--", linewidth=1.0)
+    fluctuation_axis.plot(
+        depths,
+        fluctuation,
+        color="#6a3d9a",
+        linewidth=1.0,
+    )
+
+    finite_fluctuation = np.asarray(fluctuation)[np.isfinite(fluctuation)]
+    residual_limit = max(3.0, float(np.max(np.abs(finite_fluctuation))) * 1.05)
+    fluctuation_axis.set_ylim(-residual_limit, residual_limit)
+    fluctuation_axis.set_xlabel("Depth (cm)", fontsize=12)
+    fluctuation_axis.set_ylabel("Fluctuation (%)", fontsize=11)
+    fluctuation_axis.grid(True, axis="x", color="#dce2e9", linewidth=0.8)
+
+    for axis in (idd_axis, fluctuation_axis):
+        axis.spines["top"].set_visible(False)
+        axis.spines["right"].set_visible(False)
+
     figure.tight_layout()
     figure.savefig(path, format="png", dpi=150)
     plt.close(figure)
@@ -211,6 +367,7 @@ def plot_idd(path: Path, depths: list[float], normalized_idd: list[float]) -> No
 
 def main() -> int:
     args = parse_args()
+    require_analysis_dependencies()
     dimensions, rows = read_topas_csv(args.input)
 
     z_width_cm = require_dimension(
@@ -235,14 +392,35 @@ def main() -> int:
         args.depth_offset_cm,
         args.reverse_depth,
     )
+    smoothed_idd, smoothing_window_bins = smooth_local_quadratic(
+        depths,
+        normalized_idd,
+        args.smoothing_window_cm,
+    )
+    fluctuation, metrics = calculate_fluctuation(
+        normalized_idd,
+        smoothed_idd,
+        args.analysis_min_percent,
+    )
 
     output = args.output or args.input.with_name(f"{args.input.stem}_idd.png")
     if output.suffix.lower() != ".png":
         raise ValueError("output filename must end in .png")
-    plot_idd(output, depths, normalized_idd)
+    plot_idd(output, depths, normalized_idd, smoothed_idd, fluctuation)
 
     orientation = "reversed Z-bin order" if args.reverse_depth else "CSV Z-bin order"
     print(f"Plotted {len(depths)} depth bins to {output} ({orientation}).")
+    print(
+        f"Local quadratic mean: {args.smoothing_window_cm:g} cm "
+        f"({smoothing_window_bins} bins)."
+    )
+    print(
+        f"Fluctuation diagnostics above {args.analysis_min_percent:g}% of the "
+        f"smoothed maximum: RMS={metrics['rms_percent']:.3f}%, "
+        f"P95(abs)={metrics['p95_absolute_percent']:.3f}%, "
+        f"Max(abs)={metrics['max_absolute_percent']:.3f}%, "
+        f"bins={metrics['analyzed_bins']}."
+    )
     return 0
 
 
